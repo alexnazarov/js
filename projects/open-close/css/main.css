@@ -1,0 +1,20 @@
+.menu ul {
+  display: none;
+}
+.menu.open ul {
+  display: block;
+}
+
+.icon-close {
+  display: none;
+}
+.menu.open .icon-close {
+  display: inline;
+}
+.menu.open .icon-open {
+  display: none;
+}
+
+.toggle {
+  cursor: pointer;
+}
