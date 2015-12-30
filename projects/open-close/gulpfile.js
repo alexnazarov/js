@@ -2,7 +2,7 @@ const gulp = require('gulp');
 const babel = require('gulp-babel');
 
 const paths = {
-  scripts: 'projects/**/main.js'
+  scripts: 'js/*.js'
 };
 
 gulp.task('babel', () => {
@@ -10,11 +10,9 @@ gulp.task('babel', () => {
     .pipe(babel({
       presets: ['es2015']
     }))
-    .pipe(gulp.dest('dist'));
+    .pipe(gulp.dest('js/dist/'));
 });
 
 gulp.task('watch', function() {
   gulp.watch(paths.scripts, ['babel']);
 });
-
-gulp.task('default', ['watch']);
