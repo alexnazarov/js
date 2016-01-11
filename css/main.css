@@ -30,3 +30,10 @@ a:hover {
   font-size: 13px;
   color: #999;
 }
+
+.back {
+  display: block;
+  border-bottom: 1px solid #999;
+  padding: 0 0 5px;
+  margin: 0 0 20px;
+}
