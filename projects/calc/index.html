@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calc</title>
+  <script src="js/dist/main.js" defer></script>
+
+  <style>
+    span {
+      display: inline-block;
+      border: 1px solid #000;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="calc">
+  <button data-digit="1">1</button>
+  <button data-digit="2">2</button>
+  <button data-digit="3">3</button>
+  <button data-digit="4">4</button>
+  <button data-digit="5">5</button>
+  <button data-digit="6">6</button>
+  <button data-digit="7">7</button>
+  <button data-digit="8">8</button>
+  <button data-digit="9">9</button>
+  <button data-digit="0">0</button>
+
+  <button data-decimal-point=".">.</button>
+
+  <button data-back="back">back</button>
+
+  <button data-operator="+">+</button>
+  <button data-operator="-">-</button>
+  <button data-operator="*">*</button>
+  <button data-operator="/">/</button>
+  <button id="customButton" data-operator="1/x">1/x</button>
+
+  <button data-result="=">=</button>
+
+  <input id="result-field" type="text" disabled>
+
+</div>
+
+</body>
+</html>
