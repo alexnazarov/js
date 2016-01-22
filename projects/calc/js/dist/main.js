@@ -20,17 +20,23 @@ var Calc = (function () {
 
     // All available operators
     this._allOperators = {
-      '+': function _(a, b) {
-        return a + b;
+      '+': function _(obj) {
+        return obj.a + obj.b;
       },
-      '-': function _(a, b) {
-        return a - b;
+      '-': function _(obj) {
+        return obj.a - obj.b;
       },
-      '*': function _(a, b) {
-        return a * b;
+      '*': function _(obj) {
+        return obj.a * obj.b;
       },
-      '/': function _(a, b) {
-        return a / b;
+      '/': function _(obj) {
+        return obj.a / obj.b;
+      },
+      '1/x': function x(obj) {
+        return 1 / obj.a;
+      },
+      '%': function _(obj) {
+        return obj.a * obj.b / 100;
       }
     };
 
@@ -68,13 +74,13 @@ var Calc = (function () {
       // Button's handler
       switch (this._buttonType) {
         case 'digit':
-          this._handleOperand(dataset);
+          this._handleOperand(dataset.digit);
           break;
         case 'point':
           this._handlePoint();
           break;
         case 'operator':
-          this._handleOperator(dataset);
+          this._handleOperator(dataset.operator);
           break;
         case 'back':
           this._handleBack();
@@ -98,8 +104,8 @@ var Calc = (function () {
 
   }, {
     key: '_handleOperand',
-    value: function _handleOperand(dataset) {
-      this._activeOperand += dataset.digit;
+    value: function _handleOperand(digit) {
+      this._activeOperand += digit;
 
       this._showResult(this._activeOperand);
     }
@@ -108,36 +114,47 @@ var Calc = (function () {
 
   }, {
     key: '_handleOperator',
-    value: function _handleOperator(dataset) {
-      // If operator takes one argument
-      if (this._allOperators[dataset.operator].length === 1) {
-        this._activeOperand = this._calcResult({
-          firstOperator: this._activeOperand || this._storedOperand || this._result || 0,
-          operator: dataset.operator
-        });
-
-        this._showResult(this._activeOperand);
-      }
-
-      // If operator takes two arguments
-      if (this._allOperators[dataset.operator].length === 2) {
-        if (this._storedOperand && this._activeOperand) {
+    value: function _handleOperator(operator) {
+      switch (operator) {
+        case '1/x':
           this._activeOperand = this._calcResult({
-            firstOperator: this._storedOperand || 0,
-            secondOperator: this._activeOperand || 0,
-            operator: this._operator
+            firstOperator: this._activeOperand || this._storedOperand || this._result,
+            operator: operator
           });
-        }
 
-        if (this._activeOperand || this._result) {
-          this._storedOperand = this._activeOperand || this._result;
-          this._activeOperand = '';
-          this._result = '';
-        }
+          this._showResult(this._activeOperand);
+          break;
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+          if (this._storedOperand && this._activeOperand) {
+            this._activeOperand = this._calcResult({
+              firstOperator: this._storedOperand,
+              secondOperator: this._activeOperand,
+              operator: this._operator
+            });
+          }
 
-        this._operator = dataset.operator;
+          if (this._activeOperand || this._result) {
+            this._storedOperand = this._activeOperand || this._result;
+            this._activeOperand = '';
+            this._result = '';
+          }
 
-        this._showResult(this._storedOperand);
+          this._operator = operator;
+
+          this._showResult(this._storedOperand);
+          break;
+        case '%':
+          this._activeOperand = this._calcResult({
+            firstOperator: this._storedOperand,
+            secondOperator: this._activeOperand,
+            operator: operator
+          });
+
+          this._showResult(this._activeOperand);
+          break;
       }
     }
 
@@ -159,14 +176,6 @@ var Calc = (function () {
       this._showResult(this._activeOperand);
     }
 
-    // Calculation result
-
-  }, {
-    key: '_calcResult',
-    value: function _calcResult(obj) {
-      return this._allOperators[obj.operator](parseFloat(obj.firstOperator), parseFloat(obj.secondOperator));
-    }
-
     // Result button handler
 
   }, {
@@ -174,8 +183,8 @@ var Calc = (function () {
     value: function _handleResult() {
       if (this._storedOperand && this._activeOperand) {
         this._result = this._calcResult({
-          firstOperator: this._storedOperand || 0,
-          secondOperator: this._activeOperand || 0,
+          firstOperator: this._storedOperand,
+          secondOperator: this._activeOperand,
           operator: this._operator
         });
         this._activeOperand = '';
@@ -186,6 +195,17 @@ var Calc = (function () {
       }
     }
 
+    // Calculation result
+
+  }, {
+    key: '_calcResult',
+    value: function _calcResult(obj) {
+      return this._allOperators[obj.operator]({
+        a: parseFloat(obj.firstOperator) || 0,
+        b: parseFloat(obj.secondOperator) || 0
+      });
+    }
+
     // Show result
 
   }, {
@@ -193,27 +213,11 @@ var Calc = (function () {
     value: function _showResult(value) {
       this._resultField.value = value;
     }
-
-    // Add custom operator
-
-  }, {
-    key: 'addOperator',
-    value: function addOperator(name, func) {
-      this._allOperators[name] = func;
-    }
   }]);
 
   return Calc;
 })();
 
-var calcEl = document.querySelector('#calc'),
-    customButton = document.querySelector('#customButton');
-
 var calc = new Calc({
-  elem: calcEl
-});
-
-// You can add your own operators
-calc.addOperator(customButton.getAttribute('data-operator'), function (a) {
-  return 1 / a;
+  elem: document.querySelector('#calc')
 });

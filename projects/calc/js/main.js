@@ -14,17 +14,23 @@ class Calc {
 
     // All available operators
     this._allOperators = {
-      '+': function(a, b) {
-        return a + b;
+      '+': function(obj) {
+        return obj.a + obj.b;
       },
-      '-': function(a, b) {
-        return a - b;
+      '-': function(obj) {
+        return obj.a - obj.b;
       },
-      '*': function(a, b) {
-        return a * b;
+      '*': function(obj) {
+        return obj.a * obj.b;
       },
-      '/': function(a, b) {
-        return a / b;
+      '/': function(obj) {
+        return obj.a / obj.b;
+      },
+      '1/x': function(obj) {
+        return 1 / obj.a;
+      },
+      '%': function(obj) {
+        return obj.a * obj.b / 100;
       }
     }
 
@@ -59,13 +65,13 @@ class Calc {
     // Button's handler
     switch(this._buttonType) {
       case 'digit':
-        this._handleOperand(dataset);
+        this._handleOperand(dataset.digit);
         break;
       case 'point':
         this._handlePoint();
         break;
       case 'operator':
-        this._handleOperator(dataset);
+        this._handleOperator(dataset.operator);
         break;
       case 'back':
         this._handleBack();
@@ -83,48 +89,57 @@ class Calc {
       _activeOperand: this._activeOperand,
       _result: this._result
     });
-
-
   }
 
   // Handle operand
-  _handleOperand(dataset) {
-    this._activeOperand += dataset.digit;
+  _handleOperand(digit) {
+    this._activeOperand += digit;
 
     this._showResult(this._activeOperand);
   }
 
   // Handle operator
-  _handleOperator(dataset) {
-    // If operator takes one argument
-    if(this._allOperators[dataset.operator].length === 1) {
-      this._activeOperand = this._calcResult({
-        firstOperator: this._activeOperand || this._storedOperand || this._result || 0,
-        operator: dataset.operator
-      });
-
-      this._showResult(this._activeOperand);
-    }
-
-    // If operator takes two arguments
-    if(this._allOperators[dataset.operator].length === 2) {
-      if(this._storedOperand && this._activeOperand) {
+  _handleOperator(operator) {
+    switch(operator) {
+      case '1/x':
         this._activeOperand = this._calcResult({
-          firstOperator: this._storedOperand || 0,
-          secondOperator: this._activeOperand || 0,
-          operator: this._operator
+          firstOperator: this._activeOperand || this._storedOperand || this._result,
+          operator: operator
         });
-      }
 
-      if(this._activeOperand || this._result) {
-        this._storedOperand = this._activeOperand || this._result;
-        this._activeOperand = '';
-        this._result = '';
-      }
+        this._showResult(this._activeOperand);
+        break;
+      case '+':
+      case '-':
+      case '*':
+      case '/':
+        if(this._storedOperand && this._activeOperand) {
+          this._activeOperand = this._calcResult({
+            firstOperator: this._storedOperand,
+            secondOperator: this._activeOperand,
+            operator: this._operator
+          });
+        }
 
-      this._operator = dataset.operator;
+        if(this._activeOperand || this._result) {
+          this._storedOperand = this._activeOperand || this._result;
+          this._activeOperand = '';
+          this._result = '';
+        }
 
-      this._showResult(this._storedOperand);
+        this._operator = operator;
+
+        this._showResult(this._storedOperand);
+        break;
+      case '%':
+        this._activeOperand = this._calcResult({
+          firstOperator: this._storedOperand,
+          secondOperator: this._activeOperand,
+          operator: operator
+        });
+
+        this._showResult(this._activeOperand);
+        break;
     }
   }
 
@@ -140,17 +155,12 @@ class Calc {
     this._showResult(this._activeOperand);
   }
 
-  // Calculation result
-  _calcResult(obj) {
-    return this._allOperators[obj.operator](parseFloat(obj.firstOperator), parseFloat(obj.secondOperator));
-  }
-
   // Result button handler
   _handleResult() {
     if(this._storedOperand && this._activeOperand) {
       this._result = this._calcResult({
-        firstOperator: this._storedOperand || 0,
-        secondOperator: this._activeOperand || 0,
+        firstOperator: this._storedOperand,
+        secondOperator: this._activeOperand,
         operator: this._operator
       });
       this._activeOperand = '';
@@ -162,25 +172,21 @@ class Calc {
 
   }
 
+  // Calculation result
+  _calcResult(obj) {
+    return this._allOperators[obj.operator]({
+      a: parseFloat(obj.firstOperator) || 0,
+      b: parseFloat(obj.secondOperator) || 0
+    });
+  }
+
   // Show result
   _showResult(value) {
     this._resultField.value = value;
   }
 
-  // Add custom operator
-  addOperator(name, func) {
-    this._allOperators[name] = func;
-  }
 }
 
-let calcEl       = document.querySelector('#calc'),
-    customButton = document.querySelector('#customButton');
-
 let calc = new Calc({
-  elem: calcEl
-});
-
-// You can add your own operators
-calc.addOperator(customButton.getAttribute('data-operator'), function(a) {
-  return 1 / a;
+  elem: document.querySelector('#calc')
 });
