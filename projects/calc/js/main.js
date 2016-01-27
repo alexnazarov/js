@@ -1,14 +1,18 @@
 "use strict";
 
 class Calc {
+  static get MAX_NUMBER() {
+    return 24;
+  }
   constructor(options) {
     this.elem = options.elem;
 
-    this._storedOperand = '';
+    this._operand1 = '';
+    this._operand2 = '';
     this._operator = null;
-    this._result = '';
     this._activeOperand = '';
-    this._buttonType;
+    this._result = '';
+    this._hasError = false;
 
     this._resultField = document.querySelector('#result-field');
 
@@ -29,19 +33,63 @@ class Calc {
       '1/x': function(obj) {
         return 1 / obj.a;
       },
+      'sqrt': function(obj) {
+        return Math.sqrt(obj.a);
+      },
       '%': function(obj) {
         return obj.a * obj.b / 100;
+      },
+      'pow2': function(obj) {
+        return Math.pow(obj.a, 2);
+      },
+      'pow3': function(obj) {
+        return Math.pow(obj.a, 3);
+      },
+      'powy': function(obj) {
+        return Math.pow(obj.a, obj.b);
+      },
+      '10pow': function(obj) {
+        return Math.pow(10, obj.a);
+      },
+      'factorial': function(obj) {
+        function factorial(n) {
+          return n ? n * factorial(n - 1) : 1;
+        }
+
+        return factorial(obj.a);
       }
     }
 
     // Buttons event listener
     this.elem.addEventListener('click', function(e) {
-      if(e.target.tagName === 'BUTTON') {
-        this._handleButtonsClick(e)
+      var target = e.target;
+
+      if(target.tagName === 'A') {
+        if(!this._hasError || (this._hasError && target.dataset.type === 'clear')) {
+          this._handleButtonsClick(e);
+        }
+
+        this._showResult(this._result || 0);
       }
     }.bind(this));
 
-    // Result by default
+    // Keyboard event listener
+    document.addEventListener('keypress', function(e) {
+      if(!this._hasError) {
+        this._handleKeyboardClick(e);
+      }
+
+      this._showResult(this._result || 0);
+    }.bind(this));
+    document.addEventListener('keydown', function(e) {
+      if(!this._hasError || (this._hasError && e.keyCode === 27)) {
+        this._handleKeyboardSpecialClick(e);
+      }
+
+      this._showResult(this._result || 0);
+    }.bind(this));
+
+    // Show result by default
     this._showResult(0);
   }
 
@@ -49,135 +97,248 @@ class Calc {
   _handleButtonsClick(e) {
     let dataset = e.target.dataset;
 
-    // Find out button's type
-    if(dataset.digit) {
-      this._buttonType = 'digit'
-    } else if(dataset.decimalPoint) {
-      this._buttonType = 'point'
-    } else if(dataset.operator) {
-      this._buttonType = 'operator'
-    } else if(dataset.back) {
-      this._buttonType = 'back'
-    } else if(dataset.result) {
-      this._buttonType = 'result'
-    }
-
     // Button's handler
-    switch(this._buttonType) {
-      case 'digit':
-        this._handleOperand(dataset.digit);
-        break;
-      case 'point':
-        this._handlePoint();
+    switch(dataset.type) {
+      case 'operand':
+        this._handleOperand(dataset.value);
         break;
       case 'operator':
-        this._handleOperator(dataset.operator);
+        this._handleOperator(dataset.value);
         break;
-      case 'back':
-        this._handleBack();
+      case 'point':
+        this._handlePoint(dataset.value);
+        break;
+      case 'remove':
+        this._handleRemoveButton();
+        break;
+      case 'sign':
+        this._handleChangeSign();
         break;
       case 'result':
         this._handleResult();
         break;
-      default:
-        alert('Unknown button\'s type');
+      case 'clear':
+        this._handleClear();
+        break;
+    }
+  }
+
+  // Handle keyboard's click
+  _handleKeyboardClick(e) {
+    let keyCode = e.keyCode,
+        char    = getChar(e);
+
+    // operand
+    if(keyCode >= 48 && keyCode <= 57) {
+      this._handleOperand(char);
     }
 
-    console.log({
-      _storedOperand: this._storedOperand,
-      _operator: this._operator,
-      _activeOperand: this._activeOperand,
-      _result: this._result
-    });
+    // operator
+    if(keyCode === 42 || keyCode === 43 || keyCode === 45 || keyCode === 47) {
+      this._handleOperator(char);
+    }
+
+    // point
+    if(keyCode === 46) {
+      this._handlePoint(char);
+    }
+
+    function getChar(event) {
+      if(event.which == null) {
+        if(event.keyCode < 32) return null;
+        return String.fromCharCode(event.keyCode)
+      }
+
+      if(event.which != 0 && event.charCode != 0) {
+        if(event.which < 32) return null;
+        return String.fromCharCode(event.which);
+      }
+
+      return null;
+    }
+  }
+
+  _handleKeyboardSpecialClick(e) {
+    let keyCode = e.keyCode;
+
+    // clear
+    if(keyCode === 8) {
+      this._handleRemoveButton();
+    }
+
+    // result
+    if(keyCode === 13) {
+      this._handleResult();
+    }
+
+    // clear
+    if(keyCode === 27) {
+      this._handleClear();
+    }
   }
 
   // Handle operand
-  _handleOperand(digit) {
-    this._activeOperand += digit;
+  _handleOperand(value) {
+    if(this._activeOperand === '0') {
+      if(value === '0') {
+        return
+      } else if(value !== '.') {
+        this._activeOperand = '';
+      }
+    }
 
-    this._showResult(this._activeOperand);
+    if(this._activeOperand.length < Calc.MAX_NUMBER) {
+      this._result = this._activeOperand += value;
+    }
   }
 
   // Handle operator
   _handleOperator(operator) {
+    this._copyOperands();
+
     switch(operator) {
       case '1/x':
-        this._activeOperand = this._calcResult({
-          firstOperator: this._activeOperand || this._storedOperand || this._result,
-          operator: operator
-        });
-
-        this._showResult(this._activeOperand);
+      case 'sqrt':
+      case 'pow2':
+      case 'pow3':
+      case '10pow':
+      case 'factorial':
+        singleMath.apply(this);
         break;
       case '+':
       case '-':
       case '*':
       case '/':
-        if(this._storedOperand && this._activeOperand) {
-          this._activeOperand = this._calcResult({
-            firstOperator: this._storedOperand,
-            secondOperator: this._activeOperand,
-            operator: this._operator
-          });
-        }
-
-        if(this._activeOperand || this._result) {
-          this._storedOperand = this._activeOperand || this._result;
-          this._activeOperand = '';
-          this._result = '';
-        }
-
-        this._operator = operator;
-
-        this._showResult(this._storedOperand);
+      case 'powy':
+        simpleMath.apply(this);
         break;
       case '%':
-        this._activeOperand = this._calcResult({
-          firstOperator: this._storedOperand,
-          secondOperator: this._activeOperand,
+        complexMath.apply(this);
+        break;
+    }
+
+    // Simple math function
+    function simpleMath() {
+      this._interimResult();
+
+      if(this._operand1) {
+        this._operator = operator;
+      }
+    }
+
+    // Single math function
+    function singleMath() {
+      this._result = this._calcResult({
+        firstOperator: this._operand2 || this._operand1,
+        operator: operator
+      });
+
+      if(!this._operator) {
+        this._operand1 = this._result
+      } else {
+        this._operand2 = this._result
+      }
+    }
+
+    // Complex math function
+    function complexMath() {
+      if(this._operator) {
+        this._result = this._calcResult({
+          firstOperator: this._operand1,
+          secondOperator: this._operand2 || this._operand1,
           operator: operator
         });
 
-        this._showResult(this._activeOperand);
-        break;
+        this._operand2 = this._result;
+      }
     }
   }
 
   // Handle decimal point
-  _handlePoint() {
-    this._activeOperand += '.';
+  _handlePoint(value) {
+    let activeOperand = this._activeOperand;
+
+    if(activeOperand.indexOf('.') === -1) {
+      if(activeOperand.charAt(0) === '') {
+        value = '0.';
+      }
+      this._handleOperand(value);
+    }
   }
 
   // Handle backspace button
-  _handleBack() {
-    this._activeOperand = this._activeOperand.slice(0, -1);
+  _handleRemoveButton() {
+    this._result = this._activeOperand = this._activeOperand.slice(0, -1);
+  }
 
-    this._showResult(this._activeOperand);
+  // Handle change sign button
+  _handleChangeSign() {
+    let activeOperand = this._activeOperand;
+
+    if(activeOperand) {
+      if(activeOperand.charAt(0) === '-') {
+        this._activeOperand = activeOperand.slice(1);
+      } else {
+        this._activeOperand = '-' + activeOperand;
+      }
+
+      this._result = this._activeOperand;
+    }
   }
 
   // Result button handler
   _handleResult() {
-    if(this._storedOperand && this._activeOperand) {
-      this._result = this._calcResult({
-        firstOperator: this._storedOperand,
-        secondOperator: this._activeOperand,
-        operator: this._operator
-      });
-      this._activeOperand = '';
-      this._storedOperand = '';
-      this._operator = '';
-
-      this._showResult(this._result);
+    if(this._operator) {
+      this._copyOperands();
     }
 
+    this._interimResult();
+  }
+
+  // Clear button handler
+  _handleClear() {
+    this._operand1 = '';
+    this._operand2 = '';
+    this._operator = null;
+    this._activeOperand = '';
+    this._result = '';
+    this._hasError = false;
   }
 
   // Calculation result
   _calcResult(obj) {
-    return this._allOperators[obj.operator]({
-      a: parseFloat(obj.firstOperator) || 0,
-      b: parseFloat(obj.secondOperator) || 0
-    });
+    let result;
+
+    try {
+      result = this._allOperators[obj.operator]({
+        a: parseFloat(obj.firstOperator) || 0,
+        b: parseFloat(obj.secondOperator) || 0
+      });
+    } catch(e) {}
+
+    if(!isNumeric(result)) {
+      this._hasError = true;
+      return 'Недопустимое значение';
+    }
+
+    function isNumeric(n) {
+      return !isNaN(parseFloat(n)) && isFinite(n);
+    }
+
+    return +result.toFixed(20);
+  }
+
+  // Copy active operand
+  _copyOperands() {
+    if(this._activeOperand) {
+      if(!this._operand1) {
+        this._operand1 = this._activeOperand;
+      } else {
+        this._operand2 = this._activeOperand;
+      }
+
+      this._activeOperand = '';
+    }
   }
 
   // Show result
@@ -185,6 +346,18 @@ class Calc {
     this._resultField.value = value;
   }
 
+  _interimResult() {
+    if(this._operand1 && this._operand2 && this._operator) {
+      this._result = this._calcResult({
+        firstOperator: this._operand1,
+        secondOperator: this._operand2,
+        operator: this._operator
+      });
+
+      this._operand1 = this._result;
+      this._operand2 = this._operator = '';
+    }
+  }
 }
 
 let calc = new Calc({
