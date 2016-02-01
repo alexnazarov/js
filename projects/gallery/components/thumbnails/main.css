@@ -1,0 +1,20 @@
+.thumbnails {
+  margin: 10px 0 0;
+  list-style: none;
+  padding: 0;
+  display: inline-block;
+  min-width: 570px;
+  font-size: 0;
+}
+.thumbnails li {
+  display: inline-block;
+  margin: 0 5px;
+}
+.thumbnails a {
+  display: block;
+  padding: 2px;
+  border: 1px solid #dadada;
+}
+.thumbnails .active {
+  border-color: #900;
+}
