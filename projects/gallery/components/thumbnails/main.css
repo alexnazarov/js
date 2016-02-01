@@ -1,0 +1,13 @@
+.thumbnails {
+  margin: 10px 0 0;
+  list-style: none;
+  border: 1px solid #dadada;
+  padding: 10px 0;
+  display: inline-block;
+  min-width: 570px;
+  font-size: 0;
+}
+.thumbnails li {
+  display: inline-block;
+  margin: 0 6px;
+}

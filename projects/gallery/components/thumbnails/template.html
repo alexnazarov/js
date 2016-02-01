@@ -1,0 +1,7 @@
+<ul class="thumbnails">
+  <% images.forEach(function(image) { %>
+    <li>
+      <a class="thumbnail" data-id="<%- image.id %>" href="#"><img src="<%- image.thumbnailUrl %>" alt=""></a>
+    </li>
+  <% }); %>
+</ul>
