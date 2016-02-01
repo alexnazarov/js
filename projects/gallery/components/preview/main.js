@@ -13,12 +13,19 @@ class View {
     this._compiledTemplate = _.template(this._template);
   }
 
-  render(id) {
+  _preloadImages(obj) {
+    for(let key in this._images) {
+      var img = document.createElement('img');
+      img.src = this._images[key][obj.path];
+    }
+  }
+
+  _setActive(id) {
     let largeImageUrl;
 
-    for(let key in this._images) {
-      if(this._images[key].id === id) {
-        largeImageUrl = this._images[key].largeUrl;
+    for(let i = 0; i < this._images.length; i++) {
+      if(this._images[i].id === id) {
+        largeImageUrl = this._images[i].largeUrl;
 
         break;
       }

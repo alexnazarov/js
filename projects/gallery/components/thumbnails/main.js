@@ -24,7 +24,7 @@ class Thumbnails {
 
     var thumbnail = e.target.closest('.thumbnail');
 
-    if (!thumbnail) {
+    if(!thumbnail) {
       return;
     }
 
@@ -35,6 +35,17 @@ class Thumbnails {
     });
 
     this._el.dispatchEvent(thumbnailClickEvent);
+  }
+
+  _setActive(id) {
+    var thumbnailsEls   = this._el.querySelectorAll('.thumbnail'),
+        activeThumbnail = this._el.querySelector('[data-id="' + id + '"]');
+
+    for(let i = 0; i < thumbnailsEls.length; i++) {
+      thumbnailsEls[i].classList.remove('active');
+    }
+
+    activeThumbnail.classList.add('active');
   }
 }
 

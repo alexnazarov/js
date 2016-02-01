@@ -12,7 +12,7 @@ class Gallery {
 
     this._el.innerHTML = template;
 
-    this.view = new Preview({
+    this.preview = new Preview({
       element: this._el.querySelector('[data-component="preview"]'),
       images: options.images
     });
@@ -23,6 +23,12 @@ class Gallery {
     });
 
     this.thumbnails._el.addEventListener('thumbnailClick', this.setActive.bind(this));
+
+    if(options.preloadImages) {
+      this.preview._preloadImages({
+        path: 'largeUrl'
+      });
+    }
 
     // Set first image active by default
     this.setActive(1);
@@ -37,7 +43,8 @@ class Gallery {
       value = +value.detail.id;
     }
 
-    this.view.render(value);
+    this.preview._setActive(value);
+    this.thumbnails._setActive(value);
   }
 }
 
